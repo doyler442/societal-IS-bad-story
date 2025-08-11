@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Social Score Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- General Body and Layout Fixes --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: auto;
+            padding: 2rem 1rem;
+        }
+        .app-container {
+            background-color: rgba(18, 25, 33, 0.9);
+            border-radius: 2rem;
+            box-shadow: 0 0 30px rgba(255, 100, 100, 0.2);
+            max-width: 800px;
+            width: 100%;
+            height: 90vh;
+            max-height: 700px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow-y: auto;
+            transform: scale(1);
+            transition: all 0.3s ease-in-out;
+        }
+        /* Custom scrollbar for a more thematic feel */
+        .app-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .app-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        .app-container::-webkit-scrollbar-thumb {
+            background-color: #ff6464;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+        .app-container:hover {
+            box-shadow: 0 0 40px rgba(255, 100, 100, 0.4);
+        }
+        .screen {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .screen.active {
+            display: flex;
+        }
+        #welcomeScreen, #processingScreen, #resultsScreen {
+            justify-content: center;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Component Styles --- */
+        .button-primary {
+            background: #000;
+            color: #ff6464;
+            padding: 1rem 2.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 1.25rem;
+            box-shadow: 0 0 10px rgba(255, 100, 100, 0.5);
+            transition: all 0.3s ease;
+            border: 2px solid #ff6464;
+            cursor: pointer;
+            margin-top: 2rem;
+        }
+        .button-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(255, 100, 100, 0.8);
+            background: rgba(255, 100, 100, 0.1);
+        }
+        .button-option {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            padding: 0.8rem 1.5rem;
+            border-radius: 1.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+            box-shadow: 0 0 5px rgba(255, 100, 100, 0.2);
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 100, 100, 0.5);
+            cursor: pointer;
+            margin: 0.5rem;
+            min-width: 200px;
+            text-align: center;
+        }
+        .button-option:hover {
+            background-color: rgba(255, 100, 100, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(255, 100, 100, 0.8);
+        }
+        .button-option.selected {
+            background: rgba(255, 100, 100, 0.15);
+            color: #ff6464;
+            border-color: #ff6464;
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(255, 100, 100, 0.8);
+        }
+        .question-text {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #e0e7ff;
+            margin-bottom: 2.5rem;
+            line-height: 1.3;
+        }
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #ff6464;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .score-display {
+            font-size: 6rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- Welcome Screen -->
+        <div id="welcomeScreen" class="screen active">
+            <svg class="mb-8" width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="20" width="60" height="60" rx="5" stroke="#ff6464" stroke-width="3" fill="rgba(255,100,100,0.1)"/>
+                <path d="M35 35 H65" stroke="#ff6464" stroke-width="2"/>
+                <path d="M35 50 H65" stroke="#ff6464" stroke-width="2"/>
+                <path d="M35 65 H65" stroke="#ff6464" stroke-width="2"/>
+                <path d="M50 20 V80" stroke="#ff6464" stroke-width="1" stroke-dasharray="4 4">
+                     <animate attributeName="stroke-dashoffset" from="0" to="20" dur="1s" repeatCount="indefinite"/>
+                </path>
+            </svg>
+            <h1 class="text-5xl font-extrabold text-white mb-4 leading-tight" style="text-shadow: 0 0 10px rgba(255, 100, 100, 0.8);">
+                Your Citizen Score
+            </h1>
+            <p class="text-lg text-gray-300 mb-6">Building a better society, together. Complete your Civic Duty Assessment to calculate your score.</p>
+            <button id="startButton" class="button-primary">Begin Assessment</button>
+        </div>
+
+        <!-- Question Screen -->
+        <div id="questionScreen" class="screen">
+            <p id="questionText" class="question-text"></p>
+            <div id="optionsContainer" class="flex flex-col sm:flex-row justify-center gap-4 mt-6">
+                <!-- Options will be injected here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Processing Screen -->
+        <div id="processingScreen" class="screen">
+            <div class="loading-spinner"></div>
+            <p class="text-2xl font-semibold text-gray-200">Calculating your contribution to society...</p>
+            <p class="text-lg text-gray-400 mt-2">Cross-referencing your actions with the Civic Harmony Index.</p>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="screen results-section">
+            <h2 class="text-2xl font-light text-gray-300 mb-2">Your Citizen Score is:</h2>
+            <p id="scoreText" class="score-display mb-4"></p>
+            <p id="tierText" class="text-3xl font-bold mb-8"></p>
+            
+            <div class="bg-gray-800/50 p-6 rounded-lg max-w-md">
+                <h3 class="text-xl font-bold text-white mb-3">Privilege Status:</h3>
+                <ul id="privilegesList" class="text-gray-300 text-lg list-disc list-inside text-left">
+                    <!-- Privileges will be added here -->
+                </ul>
+            </div>
+            <button id="goHomeButton" class="button-primary">Start Over</button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const questionScreen = document.getElementById('questionScreen');
+        const processingScreen = document.getElementById('processingScreen');
+        const resultsScreen = document.getElementById('resultsScreen');
+
+        const startButton = document.getElementById('startButton');
+        const questionTextElement = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const goHomeButton = document.getElementById('goHomeButton');
+
+        const scoreText = document.getElementById('scoreText');
+        const tierText = document.getElementById('tierText');
+        const privilegesList = document.getElementById('privilegesList');
+
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
+
+        // Define your questions, options, and their score impact
+        const questions = [
+            {
+                id: 'q1',
+                questionText: "Did you use a reusable coffee cup today?",
+                options: [
+                    { text: "Yes", score: 10 },
+                    { text: "No", score: -5 }
+                ]
+            },
+            {
+                id: 'q2',
+                // UPDATE: Replaced the sensitive question with a safer one
+                questionText: "Have you exceeded your allocated daily screen time limit this week?",
+                options: [
+                    { text: "Yes", score: -10 },
+                    { text: "No", score: 10 }
+                ]
+            },
+            {
+                id: 'q3',
+                questionText: "Did you publicly post a positive comment about our university this week?",
+                options: [
+                    { text: "Yes", score: 20 },
+                    { text: "No", score: -15 }
+                ]
+            },
+            {
+                id: 'q4',
+                questionText: "Did you exceed the 15-minute time limit at the public park bench?",
+                options: [
+                    { text: "Yes", score: -20 },
+                    { text: "No", score: 5 }
+                ]
+            }
+        ];
+
+        // --- Screen Management Functions ---
+        function showScreen(screenToShow) {
+            const screens = [welcomeScreen, questionScreen, processingScreen, resultsScreen];
+            screens.forEach(screen => {
+                screen.classList.toggle('active', screen === screenToShow);
+            });
+            document.getElementById('app').scrollTo(0, 0);
+        }
+
+        // --- Question and Scoring Logic ---
+        function loadQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const question = questions[currentQuestionIndex];
+                questionTextElement.textContent = question.questionText;
+                optionsContainer.innerHTML = ''; // Clear previous options
+
+                question.options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option.text;
+                    button.classList.add('button-option');
+                    button.addEventListener('click', () => selectOption(question.id, option.score));
+                    optionsContainer.appendChild(button);
+                });
+                showScreen(questionScreen);
+            } else {
+                // All questions answered, proceed to processing
+                processScore();
+            }
+        }
+
+        function selectOption(questionId, score) {
+            userAnswers[questionId] = score;
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function processScore() {
+            showScreen(processingScreen);
+
+            let finalScore = 70; // Base score
+            for (const qId in userAnswers) {
+                finalScore += userAnswers[qId];
+            }
+            // Clamp score between 0 and 100
+            finalScore = Math.max(0, Math.min(100, finalScore));
+
+            let tier = '';
+            let privileges = [];
+
+            if (finalScore > 85) {
+                tier = 'PLATINUM CITIZEN';
+                tierText.style.color = '#64ffda'; // Teal
+                privileges = ["Access to express public transport.", "Priority access to public services.", "Increased internet bandwidth."];
+            } else if (finalScore >= 60) {
+                tier = 'BRONZE CITIZEN';
+                tierText.style.color = '#FFFFFF'; // White
+                privileges = ["Standard internet speeds.", "Standard access to public transport."];
+            } else {
+                tier = 'CITIZEN UNDER REVIEW';
+                tierText.style.color = '#ff6464'; // Red
+                privileges = ["Restricted internet access after 10 PM.", "Public transport access limited to off-peak hours.", "Mandatory civic re-education course scheduled."];
+            }
+
+            // Using a timeout to simulate calculation time
+            setTimeout(() => {
+                scoreText.textContent = finalScore;
+                tierText.textContent = tier;
+                
+                privilegesList.innerHTML = ''; // Clear previous list
+                privileges.forEach(p => {
+                    const li = document.createElement('li');
+                    li.textContent = p;
+                    privilegesList.appendChild(li);
+                });
+
+                showScreen(resultsScreen);
+            }, 2000); // 2-second delay
+        }
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', () => {
+            currentQuestionIndex = 0;
+            userAnswers = {};
+            loadQuestion();
+        });
+
+        goHomeButton.addEventListener('click', () => showScreen(welcomeScreen));
+        
+        // Initial screen load
+        showScreen(welcomeScreen);
+    </script>
+</body>
+</html>
